@@ -44,16 +44,6 @@ export default function FileQueue() {
 function FileItem({ file }: { file: UploadFile }) {
   const { removeFile, pauseUpload, resumeUpload, retryUpload } = useUploadStore();
 
-  const getStatusColor = () => {
-    switch (file.status) {
-      case 'completed': return 'text-green-400';
-      case 'error': return 'text-red-400';
-      case 'uploading': return 'text-orange-400';
-      case 'paused': return 'text-yellow-400';
-      default: return 'text-gray-400';
-    }
-  };
-
   const getStatusIcon = () => {
     switch (file.status) {
       case 'completed':

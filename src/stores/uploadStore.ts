@@ -53,7 +53,9 @@ class ElectronFileReader {
 
   async slice(start: number, end: number): Promise<Blob> {
     const chunk = await window.electronAPI.getFileStreamChunk(this.filePath, start, end);
-    return new Blob([chunk]);
+    // Convert Buffer to Uint8Array for Blob compatibility
+    const uint8Array = new Uint8Array(chunk);
+    return new Blob([uint8Array]);
   }
 }
 
