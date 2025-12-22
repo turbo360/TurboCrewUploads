@@ -22,54 +22,26 @@ export default function DropZone() {
     e.stopPropagation();
     setIsDragOver(false);
 
-    const items = e.dataTransfer.items;
+    // In Electron, e.dataTransfer.files contains File objects with .path property
+    const droppedFiles = e.dataTransfer.files;
     const files: FileInfo[] = [];
 
-    const processEntry = async (entry: FileSystemEntry, basePath = ''): Promise<void> => {
-      if (entry.isFile) {
-        const fileEntry = entry as FileSystemFileEntry;
-        return new Promise((resolve) => {
-          fileEntry.file((file) => {
-            const relativePath = basePath ? `${basePath}/${file.name}` : file.name;
-            files.push({
-              path: (file as any).path || relativePath,
-              name: file.name,
-              relativePath,
-              size: file.size,
-              type: file.type || 'application/octet-stream'
-            });
-            resolve();
-          });
-        });
-      } else if (entry.isDirectory) {
-        const dirEntry = entry as FileSystemDirectoryEntry;
-        const reader = dirEntry.createReader();
+    for (let i = 0; i < droppedFiles.length; i++) {
+      const file = droppedFiles[i] as File & { path?: string };
+      const filePath = file.path;
 
-        return new Promise((resolve) => {
-          const readEntries = () => {
-            reader.readEntries(async (entries) => {
-              if (entries.length === 0) {
-                resolve();
-                return;
-              }
-
-              const newBasePath = basePath ? `${basePath}/${entry.name}` : entry.name;
-              for (const childEntry of entries) {
-                await processEntry(childEntry, newBasePath);
-              }
-              readEntries();
-            });
-          };
-          readEntries();
-        });
+      if (!filePath) {
+        console.warn('No path for dropped file:', file.name);
+        continue;
       }
-    };
 
-    for (let i = 0; i < items.length; i++) {
-      const entry = items[i].webkitGetAsEntry();
-      if (entry) {
-        await processEntry(entry);
-      }
+      files.push({
+        path: filePath,
+        name: file.name,
+        relativePath: file.name,
+        size: file.size,
+        type: file.type || 'application/octet-stream'
+      });
     }
 
     if (files.length > 0) {

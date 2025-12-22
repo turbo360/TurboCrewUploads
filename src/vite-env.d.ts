@@ -12,9 +12,31 @@ interface Window {
   electronAPI: {
     selectFiles: () => Promise<FileInfo[]>;
     selectFolders: () => Promise<FileInfo[]>;
-    getFileBuffer: (filePath: string) => Promise<Buffer>;
-    getFileStreamChunk: (filePath: string, start: number, end: number) => Promise<Buffer>;
     getFileSize: (filePath: string) => Promise<number>;
     platform: string;
+
+    startUpload: (params: {
+      uploadId: string;
+      filePath: string;
+      endpoint: string;
+      metadata: Record<string, string>;
+      token: string;
+    }) => Promise<{ success: boolean }>;
+
+    pauseUpload: (uploadId: string) => Promise<{ success: boolean }>;
+
+    resumeUpload: (params: {
+      uploadId: string;
+      filePath: string;
+      endpoint: string;
+      metadata: Record<string, string>;
+      token: string;
+    }) => Promise<{ success: boolean }>;
+
+    abortUpload: (uploadId: string) => Promise<{ success: boolean }>;
+
+    onUploadProgress: (callback: (data: { uploadId: string; bytesUploaded: number; bytesTotal: number }) => void) => () => void;
+    onUploadComplete: (callback: (data: { uploadId: string }) => void) => () => void;
+    onUploadError: (callback: (data: { uploadId: string; error: string }) => void) => () => void;
   };
 }

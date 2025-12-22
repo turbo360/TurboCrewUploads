@@ -1,11 +1,45 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useUploadStore } from '../stores/uploadStore';
 import DropZone from '../components/DropZone';
 import FileQueue from '../components/FileQueue';
 import UploadControls from '../components/UploadControls';
 import UploadStats from '../components/UploadStats';
+import CompletionModal from '../components/CompletionModal';
+import { formatFileSize } from '../utils/format';
 
 export default function UploadPage() {
   const { files } = useUploadStore();
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [hasStartedUploading, setHasStartedUploading] = useState(false);
+
+  // Track when uploads have started
+  useEffect(() => {
+    if (files.some(f => f.status === 'uploading' || f.status === 'completed')) {
+      setHasStartedUploading(true);
+    }
+  }, [files]);
+
+  // Calculate completion stats
+  const completedFiles = useMemo(() => files.filter(f => f.status === 'completed'), [files]);
+  const totalSize = useMemo(() => completedFiles.reduce((sum, f) => sum + f.size, 0), [completedFiles]);
+
+  // Check if all files are completed (only if we have files and have started uploading)
+  const allCompleted = useMemo(() => {
+    if (!hasStartedUploading || files.length === 0) return false;
+    return files.every(f => f.status === 'completed');
+  }, [files, hasStartedUploading]);
+
+  // Show modal when all files complete
+  useEffect(() => {
+    if (allCompleted && completedFiles.length > 0) {
+      setShowCompletionModal(true);
+    }
+  }, [allCompleted, completedFiles.length]);
+
+  const handleCloseModal = () => {
+    setShowCompletionModal(false);
+    setHasStartedUploading(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -43,6 +77,14 @@ export default function UploadPage() {
           </p>
         </div>
       )}
+
+      {/* Completion Modal */}
+      <CompletionModal
+        isOpen={showCompletionModal}
+        onClose={handleCloseModal}
+        completedCount={completedFiles.length}
+        totalSize={formatFileSize(totalSize)}
+      />
     </div>
   );
 }
