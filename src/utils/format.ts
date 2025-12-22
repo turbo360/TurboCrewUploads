@@ -19,17 +19,27 @@ export function formatSpeed(bytesPerSecond: number): string {
 }
 
 export function formatTime(seconds: number): string {
-  if (!seconds || seconds === Infinity) return '--:--';
+  if (!seconds || seconds === Infinity || isNaN(seconds)) return '--';
 
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
 
+  const parts: string[] = [];
+
   if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    parts.push(`${hours}hr${hours > 1 ? 's' : ''}`);
   }
 
-  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  if (minutes > 0) {
+    parts.push(`${minutes}min${minutes > 1 ? 's' : ''}`);
+  }
+
+  if (hours === 0 && minutes < 5 && secs > 0) {
+    parts.push(`${secs}sec${secs > 1 ? 's' : ''}`);
+  }
+
+  return parts.length > 0 ? parts.join(' ') : '< 1sec';
 }
 
 export function formatDuration(ms: number): string {

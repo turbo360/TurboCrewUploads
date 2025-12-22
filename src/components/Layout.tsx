@@ -39,7 +39,7 @@ export default function Layout({ children }: LayoutProps) {
             {/* Logo */}
             <div className="flex items-center gap-3 titlebar-no-drag">
               <img
-                src="/logo-dark.png"
+                src="./logo-dark.png"
                 alt="Turbo 360"
                 className="h-8"
                 onError={(e) => {

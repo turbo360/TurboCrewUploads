@@ -16,7 +16,7 @@ export default function LoginPage() {
         <div className="bg-gray-800 rounded-lg shadow-xl p-8">
           <div className="text-center mb-8">
             <img
-              src="/logo-dark.png"
+              src="./logo-dark.png"
               alt="Turbo 360"
               className="h-16 mx-auto mb-4"
               onError={(e) => {
