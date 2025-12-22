@@ -8,8 +8,9 @@ exports.default = async function notarizing(context) {
   }
 
   // Skip notarization if credentials are not set
-  if (!process.env.APPLE_ID || !process.env.APPLE_APP_SPECIFIC_PASSWORD) {
-    console.log('Skipping notarization: APPLE_ID or APPLE_APP_SPECIFIC_PASSWORD not set');
+  if (!process.env.APPLE_ID || !process.env.APPLE_APP_SPECIFIC_PASSWORD || !process.env.APPLE_TEAM_ID) {
+    console.log('Skipping notarization: APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, or APPLE_TEAM_ID not set');
+    console.log('App is signed but not notarized. Users will need to right-click > Open on first launch.');
     return;
   }
 
