@@ -30,12 +30,12 @@ export const useSessionStore = create<SessionState>()(
         set({ isLoading: true, error: null });
         try {
           const token = useAuthStore.getState().token;
-          const response = await api.post('/api/session', { projectName, crewName, notes }, token!);
+          const response = await api.post('/api/session/create', { projectName, crewName, notes }, token!);
           set({
             session: {
-              id: response.sessionId,
-              projectName,
-              crewName,
+              id: response.session.id,
+              projectName: response.session.projectName,
+              crewName: response.session.crewName,
               notes
             },
             isLoading: false
