@@ -81,12 +81,16 @@ export const useUploadStore = create<UploadState>((set, get) => {
         )
       }));
 
-      // Start next pending upload
-      const nextFile = get().files.find(f => f.status === 'pending');
-      if (nextFile) {
-        get().startUpload(nextFile.id);
-      } else {
-        set({ isUploading: get().files.some(f => f.status === 'uploading') });
+      // Start next pending uploads to maintain 4 concurrent uploads
+      const files = get().files;
+      const activeUploads = files.filter(f => f.status === 'uploading').length;
+      const pendingFiles = files.filter(f => f.status === 'pending');
+      const slotsAvailable = Math.max(0, 4 - activeUploads);
+
+      pendingFiles.slice(0, slotsAvailable).forEach(f => get().startUpload(f.id));
+
+      if (pendingFiles.length === 0 && activeUploads === 0) {
+        set({ isUploading: false });
       }
     },
 
@@ -215,9 +219,11 @@ export const useUploadStore = create<UploadState>((set, get) => {
     startAllUploads: () => {
       const files = get().files;
       const pendingFiles = files.filter(f => f.status === 'pending' || f.status === 'paused');
+      const activeUploads = files.filter(f => f.status === 'uploading').length;
 
-      // Start up to 2 concurrent uploads
-      const toStart = pendingFiles.slice(0, 2);
+      // Start up to 4 concurrent uploads for maximum throughput
+      const slotsAvailable = Math.max(0, 4 - activeUploads);
+      const toStart = pendingFiles.slice(0, slotsAvailable);
       toStart.forEach(f => get().startUpload(f.id));
     },
 
