@@ -2,7 +2,8 @@
 # Turbo 360 Apple Developer Credentials
 
 # Certificate (stored in build folder)
-export CSC_LINK="$(dirname "$0")/Certificates.p12"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export CSC_LINK="$SCRIPT_DIR/Certificates.p12"
 export CSC_KEY_PASSWORD=
 
 # Apple Notarization

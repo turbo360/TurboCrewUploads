@@ -38,5 +38,6 @@ interface Window {
     onUploadProgress: (callback: (data: { uploadId: string; bytesUploaded: number; bytesTotal: number }) => void) => () => void;
     onUploadComplete: (callback: (data: { uploadId: string }) => void) => () => void;
     onUploadError: (callback: (data: { uploadId: string; error: string }) => void) => () => void;
+    onTokenExpired: (callback: () => void) => () => void;
   };
 }
