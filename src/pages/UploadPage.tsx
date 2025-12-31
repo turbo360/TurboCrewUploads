@@ -1,16 +1,20 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useUploadStore } from '../stores/uploadStore';
+import { useSessionStore } from '../stores/sessionStore';
 import DropZone from '../components/DropZone';
 import FileQueue from '../components/FileQueue';
 import UploadControls from '../components/UploadControls';
 import UploadStats from '../components/UploadStats';
 import CompletionModal from '../components/CompletionModal';
 import { formatFileSize } from '../utils/format';
+import { sendUploadCompletionEmail } from '../utils/api';
 
 export default function UploadPage() {
   const { files } = useUploadStore();
+  const { session } = useSessionStore();
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [hasStartedUploading, setHasStartedUploading] = useState(false);
+  const emailSentRef = useRef(false);
 
   // Track when uploads have started
   useEffect(() => {
@@ -29,16 +33,28 @@ export default function UploadPage() {
     return files.every(f => f.status === 'completed');
   }, [files, hasStartedUploading]);
 
-  // Show modal when all files complete
+  // Show modal and send email when all files complete
   useEffect(() => {
     if (allCompleted && completedFiles.length > 0) {
       setShowCompletionModal(true);
+
+      // Send email notification (only once per upload batch)
+      if (!emailSentRef.current && session) {
+        emailSentRef.current = true;
+        sendUploadCompletionEmail(
+          session.projectName,
+          session.crewName,
+          completedFiles.length,
+          formatFileSize(totalSize)
+        );
+      }
     }
-  }, [allCompleted, completedFiles.length]);
+  }, [allCompleted, completedFiles.length, session, totalSize]);
 
   const handleCloseModal = () => {
     setShowCompletionModal(false);
     setHasStartedUploading(false);
+    emailSentRef.current = false; // Reset for next upload batch
   };
 
   return (

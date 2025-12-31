@@ -45,6 +45,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('upload-error', handler);
     return () => ipcRenderer.removeListener('upload-error', handler);
   },
+
+  onTokenExpired: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('token-expired', handler);
+    return () => ipcRenderer.removeListener('token-expired', handler);
+  },
 });
 
 // Types for the exposed API
@@ -79,6 +85,7 @@ declare global {
       onUploadProgress: (callback: (data: { uploadId: string; bytesUploaded: number; bytesTotal: number }) => void) => () => void;
       onUploadComplete: (callback: (data: { uploadId: string }) => void) => () => void;
       onUploadError: (callback: (data: { uploadId: string; error: string }) => void) => () => void;
+      onTokenExpired: (callback: () => void) => () => void;
     };
   }
 }

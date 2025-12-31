@@ -10,6 +10,7 @@ interface AuthState {
   login: (password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   clearError: () => void;
+  handleTokenExpired: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -48,7 +49,12 @@ export const useAuthStore = create<AuthState>()(
         set({ token: null, isAuthenticated: false });
       },
 
-      clearError: () => set({ error: null })
+      clearError: () => set({ error: null }),
+
+      handleTokenExpired: () => {
+        set({ token: null, isAuthenticated: false, error: 'Session expired. Please log in again.' });
+        localStorage.removeItem('crew-upload-session');
+      }
     }),
     {
       name: 'crew-upload-auth',
@@ -56,3 +62,10 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// Set up token expiration listener for Electron
+if (typeof window !== 'undefined' && window.electronAPI) {
+  window.electronAPI.onTokenExpired(() => {
+    useAuthStore.getState().handleTokenExpired();
+  });
+}

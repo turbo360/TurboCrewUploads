@@ -176,6 +176,20 @@ function sendError(uploadId: string, error: string) {
   }
 }
 
+function isTokenExpiredError(statusCode: number, body: string): boolean {
+  return statusCode === 401 ||
+         statusCode === 403 ||
+         body.toLowerCase().includes('token expired') ||
+         body.toLowerCase().includes('token invalid') ||
+         body.toLowerCase().includes('unauthorized');
+}
+
+function sendTokenExpired() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('token-expired');
+  }
+}
+
 function makeRequest(
   url: string,
   method: string,
@@ -240,6 +254,10 @@ async function createTusUpload(
   });
 
   if (response.statusCode !== 201) {
+    if (isTokenExpiredError(response.statusCode, response.body)) {
+      sendTokenExpired();
+      throw new Error('Token expired');
+    }
     throw new Error(`Failed to create upload: ${response.statusCode} ${response.body}`);
   }
 
@@ -264,6 +282,10 @@ async function getTusOffset(uploadUrl: string, token: string): Promise<number> {
   });
 
   if (response.statusCode !== 200 && response.statusCode !== 204) {
+    if (isTokenExpiredError(response.statusCode, response.body)) {
+      sendTokenExpired();
+      throw new Error('Token expired');
+    }
     throw new Error(`Failed to get offset: ${response.statusCode}`);
   }
 
@@ -315,6 +337,11 @@ async function uploadChunk(
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         if (res.statusCode !== 204 && res.statusCode !== 200) {
+          if (isTokenExpiredError(res.statusCode || 0, data)) {
+            sendTokenExpired();
+            reject(new Error('Token expired'));
+            return;
+          }
           reject(new Error(`Upload failed: ${res.statusCode} ${data}`));
           return;
         }
