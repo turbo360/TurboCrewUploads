@@ -9,6 +9,7 @@
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
     "build:mac": "tsc && vite build && electron-builder --mac",
+    "build:mac:signed": "bash scripts/build-mac-signed.sh",
     "build:win": "tsc && vite build && electron-builder --win",
     "build:all": "tsc && vite build && electron-builder --mac --win",
     "preview": "vite preview",
