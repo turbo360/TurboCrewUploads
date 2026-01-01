@@ -7,7 +7,6 @@ import UploadControls from '../components/UploadControls';
 import UploadStats from '../components/UploadStats';
 import CompletionModal from '../components/CompletionModal';
 import { formatFileSize } from '../utils/format';
-import { sendUploadCompletionEmail } from '../utils/api';
 
 export default function UploadPage() {
   const { files } = useUploadStore();
@@ -39,14 +38,14 @@ export default function UploadPage() {
       setShowCompletionModal(true);
 
       // Send email notification (only once per upload batch)
-      if (!emailSentRef.current && session) {
+      if (!emailSentRef.current && session && window.electronAPI) {
         emailSentRef.current = true;
-        sendUploadCompletionEmail(
-          session.projectName,
-          session.crewName,
-          completedFiles.length,
-          formatFileSize(totalSize)
-        );
+        window.electronAPI.sendCompletionEmail({
+          projectName: session.projectName,
+          crewName: session.crewName,
+          fileCount: completedFiles.length,
+          totalSize: formatFileSize(totalSize)
+        });
       }
     }
   }, [allCompleted, completedFiles.length, session, totalSize]);

@@ -51,6 +51,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('token-expired', handler);
     return () => ipcRenderer.removeListener('token-expired', handler);
   },
+
+  sendCompletionEmail: (params: {
+    projectName: string;
+    crewName: string;
+    fileCount: number;
+    totalSize: string;
+  }) => ipcRenderer.invoke('send-completion-email', params),
 });
 
 // Types for the exposed API
@@ -86,6 +93,7 @@ declare global {
       onUploadComplete: (callback: (data: { uploadId: string }) => void) => () => void;
       onUploadError: (callback: (data: { uploadId: string; error: string }) => void) => () => void;
       onTokenExpired: (callback: () => void) => () => void;
+      sendCompletionEmail: (params: { projectName: string; crewName: string; fileCount: number; totalSize: string }) => Promise<{ success: boolean }>;
     };
   }
 }

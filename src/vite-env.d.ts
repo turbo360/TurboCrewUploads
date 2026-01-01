@@ -39,5 +39,6 @@ interface Window {
     onUploadComplete: (callback: (data: { uploadId: string }) => void) => () => void;
     onUploadError: (callback: (data: { uploadId: string; error: string }) => void) => () => void;
     onTokenExpired: (callback: () => void) => () => void;
+    sendCompletionEmail: (params: { projectName: string; crewName: string; fileCount: number; totalSize: string }) => Promise<{ success: boolean }>;
   };
 }
