@@ -60,11 +60,8 @@ app.on('activate', () => {
 // IPC Handlers for native file dialogs
 ipcMain.handle('select-files', async () => {
   const result = await dialog.showOpenDialog(mainWindow!, {
-    properties: ['openFile', 'multiSelections'],
-    filters: [
-      { name: 'Video Files', extensions: ['mp4', 'mov', 'avi', 'mkv', 'mxf', 'r3d', 'braw', 'arri', 'prores'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
+    properties: ['openFile', 'multiSelections']
+    // No filters - allow all file types
   });
 
   if (result.canceled) return [];
