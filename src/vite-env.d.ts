@@ -13,6 +13,7 @@ interface Window {
     selectFiles: () => Promise<FileInfo[]>;
     selectFolders: () => Promise<FileInfo[]>;
     getFileSize: (filePath: string) => Promise<number>;
+    expandPath: (filePath: string) => Promise<FileInfo[]>;
     platform: string;
 
     startUpload: (params: {
@@ -40,5 +41,15 @@ interface Window {
     onUploadError: (callback: (data: { uploadId: string; error: string }) => void) => () => void;
     onTokenExpired: (callback: () => void) => () => void;
     sendCompletionEmail: (params: { projectName: string; crewName: string; fileCount: number; totalSize: string }) => Promise<{ success: boolean }>;
+
+    // Auto-updater
+    checkForUpdates: () => Promise<{ updateAvailable?: boolean; isDev?: boolean; error?: string }>;
+    downloadUpdate: () => Promise<{ success?: boolean; error?: string }>;
+    installUpdate: () => void;
+    getAppVersion: () => Promise<string>;
+    onUpdateAvailable: (callback: (data: { version: string; releaseNotes?: string }) => void) => () => void;
+    onUpdateDownloadProgress: (callback: (data: { percent: number; transferred: number; total: number }) => void) => () => void;
+    onUpdateDownloaded: (callback: (data: { version: string }) => void) => () => void;
+    onUpdateError: (callback: (data: { error: string }) => void) => () => void;
   };
 }
