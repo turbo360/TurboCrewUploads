@@ -1,6 +1,6 @@
 {
   "name": "crew-upload-desktop",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Turbo 360 Crew Upload Desktop Application",
   "main": "dist-electron/main.js",
   "author": "Turbo 360",
@@ -16,6 +16,7 @@
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\""
   },
   "dependencies": {
+    "electron-updater": "^6.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tus-js-client": "^4.1.0",
@@ -56,6 +57,13 @@
             "arm64",
             "x64"
           ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.icns",
@@ -83,7 +91,9 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "installerLanguages": ["en_US"],
+      "installerLanguages": [
+        "en_US"
+      ],
       "language": "1033"
     },
     "dmg": {
@@ -99,6 +109,12 @@
           "path": "/Applications"
         }
       ]
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "turbo360",
+      "repo": "TurboCrewUploads",
+      "releaseType": "release"
     }
   }
 }

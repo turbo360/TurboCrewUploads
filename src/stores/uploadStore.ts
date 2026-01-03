@@ -15,7 +15,10 @@ export interface UploadFile {
   error?: string;
   uploadedBytes: number;
   startTime?: number;
-  speed?: number;
+  speed?: number; // Average speed
+  instantSpeed?: number; // Current/instant speed (last update)
+  lastUpdateTime?: number;
+  lastUpdateBytes?: number;
 }
 
 interface UploadState {
@@ -64,12 +67,33 @@ export const useUploadStore = create<UploadState>((set, get) => {
     handleProgress: (uploadId: string, bytesUploaded: number, bytesTotal: number) => {
       const progress = Math.round((bytesUploaded / bytesTotal) * 100);
       const file = get().files.find(f => f.id === uploadId);
-      const elapsed = (Date.now() - (file?.startTime || Date.now())) / 1000;
-      const speed = elapsed > 0 ? bytesUploaded / elapsed : 0;
+      const now = Date.now();
+
+      // Calculate average speed
+      const elapsed = (now - (file?.startTime || now)) / 1000;
+      const avgSpeed = elapsed > 0 ? bytesUploaded / elapsed : 0;
+
+      // Calculate instant speed (bytes transferred since last update)
+      let instantSpeed = file?.instantSpeed || 0;
+      if (file?.lastUpdateTime && file?.lastUpdateBytes !== undefined) {
+        const timeDelta = (now - file.lastUpdateTime) / 1000;
+        if (timeDelta > 0.1) { // At least 100ms between updates to avoid spikes
+          const bytesDelta = bytesUploaded - file.lastUpdateBytes;
+          instantSpeed = bytesDelta / timeDelta;
+        }
+      }
 
       set(state => ({
         files: state.files.map(f =>
-          f.id === uploadId ? { ...f, progress, uploadedBytes: bytesUploaded, speed } : f
+          f.id === uploadId ? {
+            ...f,
+            progress,
+            uploadedBytes: bytesUploaded,
+            speed: avgSpeed,
+            instantSpeed,
+            lastUpdateTime: now,
+            lastUpdateBytes: bytesUploaded
+          } : f
         )
       }));
     },
@@ -81,11 +105,11 @@ export const useUploadStore = create<UploadState>((set, get) => {
         )
       }));
 
-      // Start next pending uploads to maintain 4 concurrent uploads
+      // Start next pending uploads to maintain 8 concurrent uploads for maximum NAS throughput
       const files = get().files;
       const activeUploads = files.filter(f => f.status === 'uploading').length;
       const pendingFiles = files.filter(f => f.status === 'pending');
-      const slotsAvailable = Math.max(0, 4 - activeUploads);
+      const slotsAvailable = Math.max(0, 8 - activeUploads);
 
       pendingFiles.slice(0, slotsAvailable).forEach(f => get().startUpload(f.id));
 
@@ -221,8 +245,8 @@ export const useUploadStore = create<UploadState>((set, get) => {
       const pendingFiles = files.filter(f => f.status === 'pending' || f.status === 'paused');
       const activeUploads = files.filter(f => f.status === 'uploading').length;
 
-      // Start up to 4 concurrent uploads for maximum throughput
-      const slotsAvailable = Math.max(0, 4 - activeUploads);
+      // Start up to 8 concurrent uploads for maximum throughput
+      const slotsAvailable = Math.max(0, 8 - activeUploads);
       const toStart = pendingFiles.slice(0, slotsAvailable);
       toStart.forEach(f => get().startUpload(f.id));
     },

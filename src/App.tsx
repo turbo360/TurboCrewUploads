@@ -4,20 +4,24 @@ import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import SessionSetupPage from './pages/SessionSetupPage';
 import UploadPage from './pages/UploadPage';
+import UpdateNotification from './components/UpdateNotification';
 
 export default function App() {
   const { isAuthenticated } = useAuthStore();
   const { session } = useSessionStore();
 
   return (
-    <Layout>
-      {!isAuthenticated ? (
-        <LoginPage />
-      ) : !session ? (
-        <SessionSetupPage />
-      ) : (
-        <UploadPage />
-      )}
-    </Layout>
+    <>
+      <UpdateNotification />
+      <Layout>
+        {!isAuthenticated ? (
+          <LoginPage />
+        ) : !session ? (
+          <SessionSetupPage />
+        ) : (
+          <UploadPage />
+        )}
+      </Layout>
+    </>
   );
 }

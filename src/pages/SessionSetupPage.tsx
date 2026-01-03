@@ -4,12 +4,11 @@ import { useSessionStore } from '../stores/sessionStore';
 export default function SessionSetupPage() {
   const [projectName, setProjectName] = useState('');
   const [crewName, setCrewName] = useState('');
-  const [notes, setNotes] = useState('');
   const { createSession, isLoading, error, clearError } = useSessionStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createSession(projectName, crewName, notes || undefined);
+    await createSession(projectName, crewName);
   };
 
   return (
@@ -65,20 +64,6 @@ export default function SessionSetupPage() {
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 placeholder="e.g., John Smith"
                 required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-300 mb-2">
-                Notes (optional)
-              </label>
-              <textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
-                placeholder="Any additional notes about the upload..."
               />
             </div>
 

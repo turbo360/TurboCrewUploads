@@ -35,13 +35,14 @@ export default function DropZone() {
         continue;
       }
 
-      files.push({
-        path: filePath,
-        name: file.name,
-        relativePath: file.name,
-        size: file.size,
-        type: file.type || 'application/octet-stream'
-      });
+      // Use expandPath to handle both files and directories
+      // This returns file info for files, or recursively gets all files for directories
+      try {
+        const expandedFiles = await window.electronAPI.expandPath(filePath);
+        files.push(...expandedFiles);
+      } catch (error) {
+        console.error('Failed to expand path:', filePath, error);
+      }
     }
 
     if (files.length > 0) {

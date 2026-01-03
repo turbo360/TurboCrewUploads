@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
 import * as http from 'http';
+import { autoUpdater } from 'electron-updater';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -57,6 +58,109 @@ app.on('activate', () => {
   }
 });
 
+// ============================================
+// AUTO-UPDATER
+// ============================================
+
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
+function setupAutoUpdater() {
+  if (isDev) {
+    console.log('Skipping auto-updater in development mode');
+    return;
+  }
+
+  // Check for updates on startup
+  autoUpdater.checkForUpdates().catch(err => {
+    console.log('Error checking for updates:', err);
+  });
+
+  // Check for updates every 4 hours
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch(err => {
+      console.log('Error checking for updates:', err);
+    });
+  }, 4 * 60 * 60 * 1000);
+}
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available:', info.version);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-available', {
+      version: info.version,
+      releaseNotes: info.releaseNotes
+    });
+  }
+});
+
+autoUpdater.on('update-not-available', () => {
+  console.log('No updates available');
+});
+
+autoUpdater.on('download-progress', (progress) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-download-progress', {
+      percent: progress.percent,
+      transferred: progress.transferred,
+      total: progress.total
+    });
+  }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update downloaded:', info.version);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-downloaded', {
+      version: info.version
+    });
+  }
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('Auto-updater error:', err);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-error', {
+      error: err.message
+    });
+  }
+});
+
+// IPC handlers for update control
+ipcMain.handle('check-for-updates', async () => {
+  if (isDev) {
+    return { updateAvailable: false, isDev: true };
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { updateAvailable: result?.updateInfo?.version !== app.getVersion() };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle('download-update', async () => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle('install-update', () => {
+  autoUpdater.quitAndInstall(false, true);
+});
+
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
+});
+
+// Initialize auto-updater after app is ready
+app.whenReady().then(() => {
+  setupAutoUpdater();
+});
+
 // IPC Handlers for native file dialogs
 ipcMain.handle('select-files', async () => {
   const result = await dialog.showOpenDialog(mainWindow!, {
@@ -93,6 +197,25 @@ ipcMain.handle('select-folders', async () => {
 
 ipcMain.handle('get-file-size', async (_, filePath: string) => {
   return fs.statSync(filePath).size;
+});
+
+// Expand a path - if it's a directory, return all files inside; if it's a file, return file info
+ipcMain.handle('expand-path', async (_, filePath: string) => {
+  const stat = fs.statSync(filePath);
+
+  if (stat.isDirectory()) {
+    // Return all files in the directory recursively
+    return getAllFiles(filePath, filePath);
+  } else {
+    // Return single file info
+    return [{
+      path: filePath,
+      name: path.basename(filePath),
+      relativePath: path.basename(filePath),
+      size: stat.size,
+      type: getFileType(filePath)
+    }];
+  }
 });
 
 // Helper to get all files from a directory recursively
@@ -153,9 +276,24 @@ interface UploadState {
 }
 
 const activeUploads: Map<string, UploadState> = new Map();
-const CHUNK_SIZE = 100 * 1024 * 1024; // 100MB chunks for faster throughput
+const CHUNK_SIZE = 256 * 1024 * 1024; // 256MB chunks for maximum throughput to NAS
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 3000, 10000]; // Exponential backoff: 1s, 3s, 10s
+
+// HTTP agents with keep-alive for connection reuse
+const httpAgent = new http.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 30000,
+  maxSockets: 20,
+  maxFreeSockets: 10
+});
+
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 30000,
+  maxSockets: 20,
+  maxFreeSockets: 10
+});
 
 // Upload logging
 interface UploadLog {
@@ -330,22 +468,18 @@ async function uploadChunk(
   }
 
   const actualChunkSize = Math.min(chunkSize, fileSize - offset);
-  const buffer = Buffer.alloc(actualChunkSize);
-
-  // Read chunk directly from file
-  const fd = fs.openSync(filePath, 'r');
-  fs.readSync(fd, buffer, 0, actualChunkSize, offset);
-  fs.closeSync(fd);
 
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(uploadUrl);
-    const protocol = parsedUrl.protocol === 'https:' ? https : http;
+    const isHttps = parsedUrl.protocol === 'https:';
+    const protocol = isHttps ? https : http;
 
     const options: http.RequestOptions = {
       hostname: parsedUrl.hostname,
-      port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+      port: parsedUrl.port || (isHttps ? 443 : 80),
       path: parsedUrl.pathname + parsedUrl.search,
       method: 'PATCH',
+      agent: isHttps ? httpsAgent : httpAgent,
       headers: {
         'Authorization': `Bearer ${token}`,
         'Tus-Resumable': '1.0.0',
@@ -376,9 +510,19 @@ async function uploadChunk(
 
     req.on('error', reject);
 
-    // Write buffer directly - no IPC!
-    req.write(buffer);
-    req.end();
+    // Stream file directly to request - no memory buffering!
+    const fileStream = fs.createReadStream(filePath, {
+      start: offset,
+      end: offset + actualChunkSize - 1,
+      highWaterMark: 16 * 1024 * 1024 // 16MB read buffer for maximum throughput
+    });
+
+    fileStream.on('error', (err) => {
+      req.destroy();
+      reject(err);
+    });
+
+    fileStream.pipe(req);
   });
 }
 

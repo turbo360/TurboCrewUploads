@@ -80,8 +80,10 @@ function FileItem({ file }: { file: UploadFile }) {
     }
   };
 
-  const eta = file.speed && file.speed > 0
-    ? (file.size - file.uploadedBytes) / file.speed
+  // Use instant speed for more accurate ETA
+  const speedForEta = file.instantSpeed && file.instantSpeed > 0 ? file.instantSpeed : file.speed;
+  const eta = speedForEta && speedForEta > 0
+    ? (file.size - file.uploadedBytes) / speedForEta
     : null;
 
   return (
@@ -116,10 +118,22 @@ function FileItem({ file }: { file: UploadFile }) {
               </div>
 
               {file.status === 'uploading' && (
-                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                  <span>{formatFileSize(file.uploadedBytes)} / {formatFileSize(file.size)}</span>
-                  {file.speed && <span>{formatSpeed(file.speed)}</span>}
-                  {eta && <span>ETA: {formatTime(eta)}</span>}
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-xs text-gray-500">
+                    {formatFileSize(file.uploadedBytes)} / {formatFileSize(file.size)}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    {file.instantSpeed !== undefined && file.instantSpeed > 0 && (
+                      <span className="text-sm font-mono font-medium text-orange-400">
+                        {formatSpeed(file.instantSpeed)}
+                      </span>
+                    )}
+                    {eta && (
+                      <span className="text-xs text-gray-500">
+                        ETA: {formatTime(eta)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

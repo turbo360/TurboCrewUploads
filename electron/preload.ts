@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectFiles: () => ipcRenderer.invoke('select-files'),
   selectFolders: () => ipcRenderer.invoke('select-folders'),
   getFileSize: (filePath: string) => ipcRenderer.invoke('get-file-size', filePath),
+  expandPath: (filePath: string) => ipcRenderer.invoke('expand-path', filePath),
   platform: process.platform,
 
   // Native upload API - uploads happen in main process (fast!)
@@ -58,6 +59,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
     fileCount: number;
     totalSize: string;
   }) => ipcRenderer.invoke('send-completion-email', params),
+
+  // Auto-updater API
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+
+  onUpdateAvailable: (callback: (data: { version: string; releaseNotes?: string }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('update-available', handler);
+    return () => ipcRenderer.removeListener('update-available', handler);
+  },
+
+  onUpdateDownloadProgress: (callback: (data: { percent: number; transferred: number; total: number }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('update-download-progress', handler);
+    return () => ipcRenderer.removeListener('update-download-progress', handler);
+  },
+
+  onUpdateDownloaded: (callback: (data: { version: string }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('update-downloaded', handler);
+    return () => ipcRenderer.removeListener('update-downloaded', handler);
+  },
+
+  onUpdateError: (callback: (data: { error: string }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('update-error', handler);
+    return () => ipcRenderer.removeListener('update-error', handler);
+  },
 });
 
 // Types for the exposed API
@@ -67,6 +98,7 @@ declare global {
       selectFiles: () => Promise<FileInfo[]>;
       selectFolders: () => Promise<FileInfo[]>;
       getFileSize: (filePath: string) => Promise<number>;
+      expandPath: (filePath: string) => Promise<FileInfo[]>;
       platform: string;
 
       startUpload: (params: {
@@ -94,6 +126,16 @@ declare global {
       onUploadError: (callback: (data: { uploadId: string; error: string }) => void) => () => void;
       onTokenExpired: (callback: () => void) => () => void;
       sendCompletionEmail: (params: { projectName: string; crewName: string; fileCount: number; totalSize: string }) => Promise<{ success: boolean }>;
+
+      // Auto-updater
+      checkForUpdates: () => Promise<{ updateAvailable?: boolean; isDev?: boolean; error?: string }>;
+      downloadUpdate: () => Promise<{ success?: boolean; error?: string }>;
+      installUpdate: () => void;
+      getAppVersion: () => Promise<string>;
+      onUpdateAvailable: (callback: (data: { version: string; releaseNotes?: string }) => void) => () => void;
+      onUpdateDownloadProgress: (callback: (data: { percent: number; transferred: number; total: number }) => void) => () => void;
+      onUpdateDownloaded: (callback: (data: { version: string }) => void) => () => void;
+      onUpdateError: (callback: (data: { error: string }) => void) => () => void;
     };
   }
 }
