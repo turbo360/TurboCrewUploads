@@ -89,6 +89,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('update-error', handler);
     return () => ipcRenderer.removeListener('update-error', handler);
   },
+
+  onCheckForUpdatesClicked: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('check-for-updates-clicked', handler);
+    return () => ipcRenderer.removeListener('check-for-updates-clicked', handler);
+  },
 });
 
 // Types for the exposed API
@@ -136,6 +142,7 @@ declare global {
       onUpdateDownloadProgress: (callback: (data: { percent: number; transferred: number; total: number }) => void) => () => void;
       onUpdateDownloaded: (callback: (data: { version: string }) => void) => () => void;
       onUpdateError: (callback: (data: { error: string }) => void) => () => void;
+      onCheckForUpdatesClicked: (callback: () => void) => () => void;
     };
   }
 }
