@@ -723,9 +723,8 @@ ipcMain.handle('open-logs-folder', async () => {
   shell.showItemInFolder(logPath);
 });
 
-// Send email notification (from main process to avoid CORS)
-const POSTMARK_API_KEY = '***REMOVED***';
-const NOTIFICATION_EMAIL = 'hello@turbo360.com.au';
+// Send email notification via backend API (Postmark key stored on server)
+const API_BASE_URL = 'https://upload.turbo.net.au';
 
 ipcMain.handle('send-completion-email', async (_, params: {
   projectName: string;
@@ -737,57 +736,20 @@ ipcMain.handle('send-completion-email', async (_, params: {
 
   try {
     const postData = JSON.stringify({
-      From: 'uploads@turbo360.com.au',
-      To: NOTIFICATION_EMAIL,
-      Subject: `New Upload Complete: ${projectName} - ${crewName}`,
-      HtmlBody: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">Crew Upload Complete</h1>
-          </div>
-          <div style="background: #1f2937; padding: 30px; color: #e5e7eb;">
-            <h2 style="color: #f97316; margin-top: 0;">Upload Details</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 10px 0; border-bottom: 1px solid #374151; color: #9ca3af;">Project</td>
-                <td style="padding: 10px 0; border-bottom: 1px solid #374151; text-align: right; font-weight: bold;">${projectName}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; border-bottom: 1px solid #374151; color: #9ca3af;">Crew</td>
-                <td style="padding: 10px 0; border-bottom: 1px solid #374151; text-align: right; font-weight: bold;">${crewName}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; border-bottom: 1px solid #374151; color: #9ca3af;">Files Uploaded</td>
-                <td style="padding: 10px 0; border-bottom: 1px solid #374151; text-align: right; font-weight: bold;">${fileCount}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; color: #9ca3af;">Total Size</td>
-                <td style="padding: 10px 0; text-align: right; font-weight: bold;">${totalSize}</td>
-              </tr>
-            </table>
-            <p style="margin-top: 20px; color: #9ca3af; font-size: 14px;">
-              Files are ready for processing in the upload server.
-            </p>
-          </div>
-          <div style="background: #111827; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
-            Turbo 360 Crew Upload System
-          </div>
-        </div>
-      `,
-      TextBody: `New upload complete!\n\nProject: ${projectName}\nCrew: ${crewName}\nFiles: ${fileCount}\nTotal Size: ${totalSize}\n\nFiles are ready for processing.`,
-      MessageStream: 'outbound'
+      projectName,
+      crewName,
+      fileCount,
+      totalSize
     });
 
-    const response = await makeRequest('https://api.postmarkapp.com/email', 'POST', {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'X-Postmark-Server-Token': POSTMARK_API_KEY
+    const response = await makeRequest(`${API_BASE_URL}/api/notification/upload-complete`, 'POST', {
+      'Content-Type': 'application/json'
     }, Buffer.from(postData));
 
-    console.log('Email sent:', response.statusCode, response.body);
+    console.log('Email notification sent:', response.statusCode, response.body);
     return { success: response.statusCode === 200, response: response.body };
   } catch (error: any) {
-    console.error('Failed to send email:', error);
+    console.error('Failed to send email notification:', error);
     return { success: false, error: error.message };
   }
 });
