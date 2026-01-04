@@ -380,23 +380,25 @@ interface UploadState {
 }
 
 const activeUploads: Map<string, UploadState> = new Map();
-const CHUNK_SIZE = 256 * 1024 * 1024; // 256MB chunks for maximum throughput to NAS
+const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB chunks - better for internet uploads (faster recovery, better progress)
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 3000, 10000]; // Exponential backoff: 1s, 3s, 10s
 
-// HTTP agents with keep-alive for connection reuse
+// HTTP agents with keep-alive for connection reuse and optimized for uploads
 const httpAgent = new http.Agent({
   keepAlive: true,
-  keepAliveMsecs: 30000,
-  maxSockets: 20,
-  maxFreeSockets: 10
+  keepAliveMsecs: 60000,
+  maxSockets: 50,
+  maxFreeSockets: 20,
+  timeout: 300000, // 5 minute timeout for large uploads
 });
 
 const httpsAgent = new https.Agent({
   keepAlive: true,
-  keepAliveMsecs: 30000,
-  maxSockets: 20,
-  maxFreeSockets: 10
+  keepAliveMsecs: 60000,
+  maxSockets: 50,
+  maxFreeSockets: 20,
+  timeout: 300000,
 });
 
 // Upload logging
