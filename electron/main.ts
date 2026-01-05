@@ -837,15 +837,17 @@ ipcMain.handle('send-completion-email', async (_, params: {
   crewName: string;
   fileCount: number;
   totalSize: string;
+  fileNames: string[];
 }) => {
-  const { projectName, crewName, fileCount, totalSize } = params;
+  const { projectName, crewName, fileCount, totalSize, fileNames } = params;
 
   try {
     const postData = JSON.stringify({
       projectName,
       crewName,
       fileCount,
-      totalSize
+      totalSize,
+      fileNames
     });
 
     const response = await makeRequest(`${API_BASE_URL}/api/notification/upload-complete`, 'POST', {

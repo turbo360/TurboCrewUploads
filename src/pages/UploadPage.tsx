@@ -44,7 +44,8 @@ export default function UploadPage() {
           projectName: session.projectName,
           crewName: session.crewName,
           fileCount: completedFiles.length,
-          totalSize: formatFileSize(totalSize)
+          totalSize: formatFileSize(totalSize),
+          fileNames: completedFiles.map(f => f.name)
         });
       }
     }

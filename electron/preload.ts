@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     crewName: string;
     fileCount: number;
     totalSize: string;
+    fileNames: string[];
   }) => ipcRenderer.invoke('send-completion-email', params),
 
   // Auto-updater API
@@ -131,7 +132,7 @@ declare global {
       onUploadComplete: (callback: (data: { uploadId: string }) => void) => () => void;
       onUploadError: (callback: (data: { uploadId: string; error: string }) => void) => () => void;
       onTokenExpired: (callback: () => void) => () => void;
-      sendCompletionEmail: (params: { projectName: string; crewName: string; fileCount: number; totalSize: string }) => Promise<{ success: boolean }>;
+      sendCompletionEmail: (params: { projectName: string; crewName: string; fileCount: number; totalSize: string; fileNames: string[] }) => Promise<{ success: boolean }>;
 
       // Auto-updater
       checkForUpdates: () => Promise<{ updateAvailable?: boolean; isDev?: boolean; error?: string }>;
