@@ -437,9 +437,92 @@ function sendComplete(uploadId: string) {
   }
 }
 
+function getUserFriendlyError(error: string): string {
+  const lowerError = error.toLowerCase();
+
+  // Network errors
+  if (lowerError.includes('enotfound') || lowerError.includes('getaddrinfo')) {
+    return 'Unable to connect to server. Please check your internet connection.';
+  }
+  if (lowerError.includes('econnrefused')) {
+    return 'Server is not responding. Please try again later.';
+  }
+  if (lowerError.includes('econnreset') || lowerError.includes('socket hang up')) {
+    return 'Connection was interrupted. The upload will retry automatically.';
+  }
+  if (lowerError.includes('etimedout') || lowerError.includes('timeout')) {
+    return 'Connection timed out. Please check your internet and try again.';
+  }
+  if (lowerError.includes('network') || lowerError.includes('offline')) {
+    return 'Network error. Please check your internet connection.';
+  }
+
+  // Auth errors
+  if (lowerError.includes('token expired') || lowerError.includes('token invalid')) {
+    return 'Your session has expired. Please log in again.';
+  }
+  if (lowerError.includes('unauthorized') || lowerError.includes('401')) {
+    return 'Session expired. Please log in again.';
+  }
+  if (lowerError.includes('403') || lowerError.includes('forbidden')) {
+    return 'Access denied. Please check your permissions.';
+  }
+
+  // Server errors
+  if (lowerError.includes('500') || lowerError.includes('internal server')) {
+    return 'Server error. Please try again in a moment.';
+  }
+  if (lowerError.includes('502') || lowerError.includes('bad gateway')) {
+    return 'Server is temporarily unavailable. Please try again.';
+  }
+  if (lowerError.includes('503') || lowerError.includes('service unavailable')) {
+    return 'Server is busy. Please try again in a moment.';
+  }
+  if (lowerError.includes('504') || lowerError.includes('gateway timeout')) {
+    return 'Server took too long to respond. Please try again.';
+  }
+
+  // File errors
+  if (lowerError.includes('enoent') || lowerError.includes('no such file')) {
+    return 'File not found. It may have been moved or deleted.';
+  }
+  if (lowerError.includes('eacces') || lowerError.includes('permission denied')) {
+    return 'Cannot access file. Please check file permissions.';
+  }
+  if (lowerError.includes('disk full') || lowerError.includes('no space')) {
+    return 'Server storage is full. Please contact support.';
+  }
+
+  // Upload specific
+  if (lowerError.includes('upload aborted')) {
+    return 'Upload was cancelled.';
+  }
+  if (lowerError.includes('failed to create upload')) {
+    return 'Could not start upload. Please try again.';
+  }
+
+  // If no match, return a cleaned up version of the original
+  // Remove technical prefixes and make it more readable
+  let cleaned = error
+    .replace(/^Error:\s*/i, '')
+    .replace(/^failed to /i, 'Could not ')
+    .replace(/\s*\(.*\)$/, ''); // Remove trailing (details)
+
+  // Capitalize first letter
+  cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+
+  // Add period if missing
+  if (!cleaned.endsWith('.') && !cleaned.endsWith('!') && !cleaned.endsWith('?')) {
+    cleaned += '.';
+  }
+
+  return cleaned || 'An unexpected error occurred. Please try again.';
+}
+
 function sendError(uploadId: string, error: string) {
+  const friendlyError = getUserFriendlyError(error);
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('upload-error', { uploadId, error });
+    mainWindow.webContents.send('upload-error', { uploadId, error: friendlyError });
   }
 }
 

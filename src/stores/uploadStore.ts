@@ -30,6 +30,7 @@ interface UploadState {
   pauseUpload: (id: string) => void;
   resumeUpload: (id: string) => void;
   retryUpload: (id: string) => void;
+  retryAllFailed: () => void;
   startAllUploads: () => void;
   pauseAllUploads: () => void;
   clearCompleted: () => void;
@@ -238,6 +239,17 @@ export const useUploadStore = create<UploadState>((set, get) => {
         )
       }));
       get().startUpload(id);
+    },
+
+    retryAllFailed: () => {
+      // Reset all failed files to pending
+      set(state => ({
+        files: state.files.map(f =>
+          f.status === 'error' ? { ...f, status: 'pending', progress: 0, error: undefined, uploadedBytes: 0 } : f
+        )
+      }));
+      // Start uploads (respecting concurrent limit)
+      get().startAllUploads();
     },
 
     startAllUploads: () => {

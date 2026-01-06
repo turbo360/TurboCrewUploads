@@ -54,8 +54,8 @@ function FileItem({ file }: { file: UploadFile }) {
         );
       case 'error':
         return (
-          <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         );
       case 'uploading':
@@ -139,13 +139,40 @@ function FileItem({ file }: { file: UploadFile }) {
             </div>
           )}
 
-          {/* Error Message */}
-          {file.error && (
-            <p className="mt-1 text-xs text-red-400">{file.error}</p>
+          {/* Error Message with prominent retry */}
+          {file.status === 'error' && file.error && (
+            <div className="mt-2 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <svg className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-red-400 font-medium">Upload Failed</p>
+                  <p className="text-xs text-red-300/80 mt-0.5">{file.error}</p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  onClick={() => retryUpload(file.id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Retry Upload
+                </button>
+                <button
+                  onClick={() => removeFile(file.id)}
+                  className="px-3 py-1.5 text-gray-400 hover:text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Actions */}
+        {/* Actions - for non-error states */}
         <div className="flex-shrink-0 flex items-center gap-1">
           {file.status === 'uploading' && (
             <button
@@ -171,19 +198,7 @@ function FileItem({ file }: { file: UploadFile }) {
             </button>
           )}
 
-          {file.status === 'error' && (
-            <button
-              onClick={() => retryUpload(file.id)}
-              className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-              title="Retry"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          )}
-
-          {file.status !== 'uploading' && (
+          {file.status !== 'uploading' && file.status !== 'error' && (
             <button
               onClick={() => removeFile(file.id)}
               className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-colors"
