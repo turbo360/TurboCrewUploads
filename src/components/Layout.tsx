@@ -31,27 +31,39 @@ export default function Layout({ children }: LayoutProps) {
   const isMac = window.electronAPI?.platform === 'darwin';
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-900">
-      {/* Title bar / Header */}
-      <header className={`bg-gray-800 border-b border-gray-700 ${isMac ? 'titlebar-drag-region' : ''}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`flex justify-between items-center h-14 ${isMac ? 'pl-16' : ''}`}>
-            {/* Logo */}
-            <div className="flex items-center gap-3 titlebar-no-drag">
-              <img
-                src="./logo-dark.png"
-                alt="Turbo 360"
-                className="h-8"
-                onError={(e) => {
-                  // Fallback if logo doesn't load
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-              <span className="text-white font-semibold">Crew Upload</span>
-            </div>
+    <div
+      className="min-h-screen flex flex-col relative"
+      style={{
+        backgroundImage: 'url(./bg.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      {/* Dark overlay for better readability */}
+      <div className="absolute inset-0 bg-black/60" />
 
-            {/* Session info & actions */}
-            {isAuthenticated && (
+      {/* Title bar / Header - Only show when authenticated */}
+      {isAuthenticated && (
+        <header className={`relative z-10 bg-gray-900/80 backdrop-blur-sm border-b border-gray-700/50 ${isMac ? 'titlebar-drag-region' : ''}`}>
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className={`flex justify-between items-center h-14 ${isMac ? 'pl-16' : ''}`}>
+              {/* Logo */}
+              <div className="flex items-center gap-3 titlebar-no-drag">
+                <img
+                  src="./logo-dark.png"
+                  alt="Turbo 360"
+                  className="h-8"
+                  onError={(e) => {
+                    // Fallback if logo doesn't load
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                <span className="text-white font-semibold">Crew Upload</span>
+              </div>
+
+              {/* Session info & actions */}
               <div className="flex items-center gap-4 titlebar-no-drag">
                 {session && (
                   <div className="hidden sm:block text-right">
@@ -77,26 +89,26 @@ export default function Layout({ children }: LayoutProps) {
                   </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Main content */}
-      <main className="flex-1 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {children}
-        </div>
+      <main className={`relative z-10 flex-1 ${isAuthenticated ? 'py-6 px-4 sm:px-6 lg:px-8' : ''}`}>
+        {children}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-gray-800 border-t border-gray-700 py-3">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs text-gray-500">
-            &copy; {new Date().getFullYear()} Turbo 360. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      {/* Footer - Only show when authenticated */}
+      {isAuthenticated && (
+        <footer className="relative z-10 bg-gray-900/80 backdrop-blur-sm border-t border-gray-700/50 py-3">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <p className="text-center text-xs text-gray-500">
+              &copy; {new Date().getFullYear()} Turbo 360. All rights reserved.
+            </p>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

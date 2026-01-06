@@ -78,10 +78,10 @@ export default function DropZone() {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={`
-        relative rounded-xl border-2 border-dashed transition-all duration-200
+        relative rounded-xl border-2 border-dashed transition-all duration-200 backdrop-blur-sm
         ${isDragOver
-          ? 'border-orange-500 bg-orange-500/10'
-          : 'border-gray-600 hover:border-gray-500 bg-gray-800/50'
+          ? 'border-orange-500 bg-orange-500/20'
+          : 'border-gray-600 hover:border-gray-500 bg-gray-900/70'
         }
       `}
     >

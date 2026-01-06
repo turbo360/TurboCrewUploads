@@ -14,7 +14,7 @@ export default function SessionSetupPage() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="w-full max-w-lg">
-        <div className="bg-gray-800 rounded-lg shadow-xl p-8">
+        <div className="bg-gray-900/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-gray-700/50">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-white">New Upload Session</h1>
             <p className="text-gray-400 mt-2">
@@ -45,7 +45,7 @@ export default function SessionSetupPage() {
                 type="text"
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 placeholder="e.g., Summer Wedding 2024"
                 required
                 autoFocus
@@ -61,7 +61,7 @@ export default function SessionSetupPage() {
                 type="text"
                 value={crewName}
                 onChange={(e) => setCrewName(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 placeholder="e.g., John Smith"
                 required
               />

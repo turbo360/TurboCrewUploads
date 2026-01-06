@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/authStore';
 export default function LoginPage() {
   const [password, setPassword] = useState('');
   const { login, isLoading, error, clearError } = useAuthStore();
+  const isMac = window.electronAPI?.platform === 'darwin';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -11,19 +12,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center relative"
-      style={{
-        backgroundImage: 'url(./bg.jpg)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
-      {/* Dark overlay for better readability */}
-      <div className="absolute inset-0 bg-black/50" />
-
-      <div className="w-full max-w-md relative z-10 px-4">
+    <div className={`min-h-screen flex items-center justify-center px-4 ${isMac ? 'pt-8' : ''}`}>
+      <div className="w-full max-w-md">
         <div className="bg-gray-900/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-gray-700/50">
           <div className="text-center mb-8">
             <img

@@ -33,7 +33,7 @@ export default function UploadStats() {
   }, [files]);
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
+    <div className="bg-gray-900/70 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {/* Files Progress */}
         <div>

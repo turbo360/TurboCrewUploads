@@ -9,7 +9,7 @@ export default function UploadControls() {
   const errorCount = files.filter(f => f.status === 'error').length;
 
   return (
-    <div className="flex items-center justify-between gap-4 bg-gray-800 rounded-lg p-4">
+    <div className="flex items-center justify-between gap-4 bg-gray-900/70 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
       {/* Status Summary */}
       <div className="flex items-center gap-4 text-sm">
         {pendingCount > 0 && (

@@ -20,8 +20,8 @@ export default function FileQueue() {
   return (
     <div className="space-y-4">
       {Object.entries(groupedFiles).map(([folder, folderFiles]) => (
-        <div key={folder} className="bg-gray-800 rounded-lg overflow-hidden">
-          <div className="px-4 py-3 bg-gray-700/50 border-b border-gray-700">
+        <div key={folder} className="bg-gray-900/70 backdrop-blur-sm rounded-lg overflow-hidden border border-gray-700/50">
+          <div className="px-4 py-3 bg-gray-800/50 border-b border-gray-700/50">
             <div className="flex items-center gap-2">
               <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
