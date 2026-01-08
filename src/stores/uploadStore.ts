@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useAuthStore } from './authStore';
 import { useSessionStore } from './sessionStore';
-import { API_BASE_URL } from '../utils/api';
+import { API_BASE_URL, reportUploadProgress } from '../utils/api';
 
 export interface UploadFile {
   id: string;
@@ -42,6 +42,80 @@ interface UploadState {
 
 // Initialize event listeners once
 let listenersInitialized = false;
+let progressReportInterval: ReturnType<typeof setInterval> | null = null;
+let sessionStartTime: string | null = null;
+
+// Function to report progress to backend
+async function sendProgressReport(files: UploadFile[]) {
+  const session = useSessionStore.getState().session;
+  if (!session || files.length === 0) return;
+
+  // Only report if there are active uploads
+  const hasActiveUploads = files.some(f =>
+    f.status === 'uploading' || f.status === 'pending' || f.status === 'paused'
+  );
+  if (!hasActiveUploads && files.every(f => f.status === 'completed')) {
+    // All done - send final update then stop
+    await reportUploadProgress({
+      session_id: session.id,
+      project_name: session.projectName,
+      crew_name: session.crewName,
+      started_at: sessionStartTime || undefined,
+      files: files.map(f => ({
+        id: f.id,
+        name: f.name,
+        size: f.size,
+        uploadedBytes: f.uploadedBytes,
+        progress: f.progress,
+        status: f.status,
+        speed: f.speed
+      }))
+    });
+    return;
+  }
+
+  await reportUploadProgress({
+    session_id: session.id,
+    project_name: session.projectName,
+    crew_name: session.crewName,
+    started_at: sessionStartTime || undefined,
+    files: files.map(f => ({
+      id: f.id,
+      name: f.name,
+      size: f.size,
+      uploadedBytes: f.uploadedBytes,
+      progress: f.progress,
+      status: f.status,
+      speed: f.speed
+    }))
+  });
+}
+
+// Start progress reporting interval
+function startProgressReporting(getFiles: () => UploadFile[]) {
+  if (progressReportInterval) return; // Already running
+
+  sessionStartTime = new Date().toISOString();
+
+  // Report every 2 seconds
+  progressReportInterval = setInterval(() => {
+    sendProgressReport(getFiles());
+  }, 2000);
+
+  // Send initial report immediately
+  sendProgressReport(getFiles());
+}
+
+// Stop progress reporting interval
+function stopProgressReporting(getFiles: () => UploadFile[]) {
+  if (progressReportInterval) {
+    // Send final report
+    sendProgressReport(getFiles());
+    clearInterval(progressReportInterval);
+    progressReportInterval = null;
+    sessionStartTime = null;
+  }
+}
 
 export const useUploadStore = create<UploadState>((set, get) => {
   // Set up IPC event listeners when store is created
@@ -116,6 +190,8 @@ export const useUploadStore = create<UploadState>((set, get) => {
 
       if (pendingFiles.length === 0 && activeUploads === 0) {
         set({ isUploading: false });
+        // Stop progress reporting when all uploads complete
+        stopProgressReporting(() => get().files);
       }
     },
 
@@ -257,6 +333,11 @@ export const useUploadStore = create<UploadState>((set, get) => {
       const pendingFiles = files.filter(f => f.status === 'pending' || f.status === 'paused');
       const activeUploads = files.filter(f => f.status === 'uploading').length;
 
+      // Start progress reporting when uploads begin
+      if (pendingFiles.length > 0 && activeUploads === 0) {
+        startProgressReporting(() => get().files);
+      }
+
       // Start up to 8 concurrent uploads for maximum throughput
       const slotsAvailable = Math.max(0, 8 - activeUploads);
       const toStart = pendingFiles.slice(0, slotsAvailable);
@@ -276,6 +357,8 @@ export const useUploadStore = create<UploadState>((set, get) => {
     },
 
     clearAll: () => {
+      // Stop progress reporting
+      stopProgressReporting(() => get().files);
       // Abort all active uploads
       get().files.forEach(f => {
         if (f.status === 'uploading') {

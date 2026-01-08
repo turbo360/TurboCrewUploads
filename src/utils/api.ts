@@ -1,4 +1,5 @@
 export const API_BASE_URL = 'https://upload.turbo.net.au';
+export const BACKEND_URL = 'https://turbo.net.au';
 
 class ApiError extends Error {
   constructor(message: string, public status?: number, public isTokenExpired?: boolean) {
@@ -106,6 +107,42 @@ export async function sendUploadCompletionEmail(
     return response.ok;
   } catch (error) {
     console.error('Failed to send completion email:', error);
+    return false;
+  }
+}
+
+export interface FileProgress {
+  id: string;
+  name: string;
+  size: number;
+  uploadedBytes: number;
+  progress: number;
+  status: string;
+  speed?: number;
+}
+
+export interface UploadProgressUpdate {
+  session_id: string;
+  project_name: string;
+  crew_name: string;
+  files: FileProgress[];
+  started_at?: string;
+}
+
+export async function reportUploadProgress(update: UploadProgressUpdate): Promise<boolean> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/crew-upload/progress`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(update)
+    });
+
+    return response.ok;
+  } catch (error) {
+    // Silently fail - don't interrupt uploads if progress reporting fails
+    console.debug('Failed to report upload progress:', error);
     return false;
   }
 }
