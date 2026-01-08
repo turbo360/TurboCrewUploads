@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { api } from '../utils/api';
+import { api, reportSessionStart, reportSessionEnd } from '../utils/api';
 import { useAuthStore } from './authStore';
 
 interface Session {
@@ -31,15 +31,24 @@ export const useSessionStore = create<SessionState>()(
         try {
           const token = useAuthStore.getState().token;
           const response = await api.post('/api/session/create', { projectName, crewName, notes }, token!);
+          const sessionData = {
+            id: response.session.id,
+            projectName: response.session.projectName,
+            crewName: response.session.crewName,
+            notes
+          };
           set({
-            session: {
-              id: response.session.id,
-              projectName: response.session.projectName,
-              crewName: response.session.crewName,
-              notes
-            },
+            session: sessionData,
             isLoading: false
           });
+
+          // Report session start to backend for live monitoring
+          reportSessionStart({
+            session_id: sessionData.id,
+            project_name: sessionData.projectName,
+            crew_name: sessionData.crewName
+          });
+
           return true;
         } catch (error: any) {
           set({
@@ -50,7 +59,14 @@ export const useSessionStore = create<SessionState>()(
         }
       },
 
-      clearSession: () => set({ session: null }),
+      clearSession: () => {
+        const currentSession = useSessionStore.getState().session;
+        if (currentSession) {
+          // Report session end to backend for live monitoring
+          reportSessionEnd(currentSession.id);
+        }
+        set({ session: null });
+      },
       clearError: () => set({ error: null })
     }),
     {

@@ -146,3 +146,44 @@ export async function reportUploadProgress(update: UploadProgressUpdate): Promis
     return false;
   }
 }
+
+export interface SessionStartUpdate {
+  session_id: string;
+  project_name: string;
+  crew_name: string;
+}
+
+export async function reportSessionStart(update: SessionStartUpdate): Promise<boolean> {
+  try {
+    console.log('[Session] Reporting session start:', update);
+    const response = await fetch(`${BACKEND_URL}/api/crew-upload/session-start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(update)
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.debug('Failed to report session start:', error);
+    return false;
+  }
+}
+
+export async function reportSessionEnd(sessionId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/crew-upload/session-end`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ session_id: sessionId })
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.debug('Failed to report session end:', error);
+    return false;
+  }
+}

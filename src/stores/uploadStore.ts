@@ -48,7 +48,11 @@ let sessionStartTime: string | null = null;
 // Function to report progress to backend
 async function sendProgressReport(files: UploadFile[]) {
   const session = useSessionStore.getState().session;
-  if (!session || files.length === 0) return;
+  console.log('[Progress Report] Session:', session?.id, 'Files:', files.length);
+  if (!session || files.length === 0) {
+    console.log('[Progress Report] Skipping - no session or files');
+    return;
+  }
 
   // Only report if there are active uploads
   const hasActiveUploads = files.some(f =>
@@ -244,6 +248,11 @@ export const useUploadStore = create<UploadState>((set, get) => {
       const session = useSessionStore.getState().session;
 
       if (!token || !session) return;
+
+      // Start progress reporting if not already running
+      if (!progressReportInterval) {
+        startProgressReporting(() => get().files);
+      }
 
       set(state => ({
         files: state.files.map(f =>
