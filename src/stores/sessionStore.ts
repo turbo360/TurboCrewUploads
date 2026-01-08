@@ -43,10 +43,15 @@ export const useSessionStore = create<SessionState>()(
           });
 
           // Report session start to backend for live monitoring
+          console.log('[Session] About to report session start:', sessionData.id);
           reportSessionStart({
             session_id: sessionData.id,
             project_name: sessionData.projectName,
             crew_name: sessionData.crewName
+          }).then(result => {
+            console.log('[Session] Session start reported, result:', result);
+          }).catch(err => {
+            console.error('[Session] Failed to report session start:', err);
           });
 
           return true;
