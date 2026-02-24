@@ -35,6 +35,7 @@ interface UploadState {
   pauseAllUploads: () => void;
   clearCompleted: () => void;
   clearAll: () => void;
+  clearForNewBatch: () => void;
   handleProgress: (uploadId: string, bytesUploaded: number, bytesTotal: number) => void;
   handleComplete: (uploadId: string) => void;
   handleError: (uploadId: string, error: string) => void;
@@ -374,6 +375,13 @@ export const useUploadStore = create<UploadState>((set, get) => {
           window.electronAPI.abortUpload(f.id);
         }
       });
+      set({ files: [], isUploading: false });
+    },
+
+    clearForNewBatch: () => {
+      // Stop progress reporting for this batch
+      stopProgressReporting(() => get().files);
+      // Clear files but do NOT end session
       set({ files: [], isUploading: false });
     }
   };

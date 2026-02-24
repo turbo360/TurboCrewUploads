@@ -1,216 +1,68 @@
-import { useUploadStore, UploadFile } from '../stores/uploadStore';
-import { formatFileSize, formatSpeed, formatTime } from '../utils/format';
+import { useState } from 'react';
+import { useUploadStore } from '../stores/uploadStore';
+import VirtualFileList from './VirtualFileList';
 
 export default function FileQueue() {
-  const { files } = useUploadStore();
+  const { files, removeFile, retryUpload, pauseUpload, resumeUpload } = useUploadStore();
+  const [showAll, setShowAll] = useState(false);
 
-  // Group files by folder
-  const groupedFiles = files.reduce((acc, file) => {
-    const folder = file.relativePath
-      ? file.relativePath.split('/').slice(0, -1).join('/') || 'Root'
-      : 'Individual Files';
+  const activeFiles = files.filter(f => f.status === 'uploading');
+  const completedCount = files.filter(f => f.status === 'completed').length;
+  const pendingCount = files.filter(f => f.status === 'pending' || f.status === 'paused').length;
+  const errorCount = files.filter(f => f.status === 'error').length;
 
-    if (!acc[folder]) {
-      acc[folder] = [];
-    }
-    acc[folder].push(file);
-    return acc;
-  }, {} as Record<string, UploadFile[]>);
+  const displayFiles = showAll ? files : activeFiles;
 
   return (
-    <div className="space-y-4">
-      {Object.entries(groupedFiles).map(([folder, folderFiles]) => (
-        <div key={folder} className="bg-gray-900/70 backdrop-blur-sm rounded-lg overflow-hidden border border-gray-700/50">
-          <div className="px-4 py-3 bg-gray-800/50 border-b border-gray-700/50">
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-              <span className="text-sm font-medium text-gray-300">{folder}</span>
-              <span className="text-xs text-gray-500">({folderFiles.length} files)</span>
+    <div className="bg-gray-900/70 backdrop-blur-sm rounded-lg border border-gray-700/50 overflow-hidden">
+      {/* Active uploads header */}
+      {!showAll && activeFiles.length > 0 && (
+        <div className="px-4 py-3 border-b border-gray-700/50">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-white">Active ({activeFiles.length})</span>
+            <div className="flex items-center gap-3 text-xs text-gray-400">
+              {completedCount > 0 && <span className="text-green-400">Completed: {completedCount}</span>}
+              {pendingCount > 0 && <span>Queued: {pendingCount}</span>}
+              {errorCount > 0 && <span className="text-red-400">Failed: {errorCount}</span>}
             </div>
           </div>
-          <div className="divide-y divide-gray-700">
-            {folderFiles.map((file) => (
-              <FileItem key={file.id} file={file} />
-            ))}
-          </div>
         </div>
-      ))}
-    </div>
-  );
-}
+      )}
 
-function FileItem({ file }: { file: UploadFile }) {
-  const { removeFile, pauseUpload, resumeUpload, retryUpload } = useUploadStore();
-
-  const getStatusIcon = () => {
-    switch (file.status) {
-      case 'completed':
-        return (
-          <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        );
-      case 'error':
-        return (
-          <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        );
-      case 'uploading':
-        return (
-          <svg className="h-5 w-5 text-orange-400 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-        );
-      case 'paused':
-        return (
-          <svg className="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6" />
-          </svg>
-        );
-      default:
-        return (
-          <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        );
-    }
-  };
-
-  // Use instant speed for more accurate ETA
-  const speedForEta = file.instantSpeed && file.instantSpeed > 0 ? file.instantSpeed : file.speed;
-  const eta = speedForEta && speedForEta > 0
-    ? (file.size - file.uploadedBytes) / speedForEta
-    : null;
-
-  return (
-    <div className="px-4 py-3 hover:bg-gray-700/30 transition-colors">
-      <div className="flex items-center gap-3">
-        {/* Status Icon */}
-        <div className="flex-shrink-0">{getStatusIcon()}</div>
-
-        {/* File Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-white truncate">{file.name}</p>
-            <span className="text-xs text-gray-500">{formatFileSize(file.size)}</span>
-          </div>
-
-          {/* Progress Bar */}
-          {(file.status === 'uploading' || file.status === 'paused' || file.progress > 0) && (
-            <div className="mt-2">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      file.status === 'completed' ? 'bg-green-500' :
-                      file.status === 'error' ? 'bg-red-500' :
-                      file.status === 'paused' ? 'bg-yellow-500' :
-                      'bg-orange-500'
-                    }`}
-                    style={{ width: `${file.progress}%` }}
-                  />
-                </div>
-                <span className="text-xs text-gray-400 w-10 text-right">{file.progress}%</span>
-              </div>
-
-              {file.status === 'uploading' && (
-                <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-xs text-gray-500">
-                    {formatFileSize(file.uploadedBytes)} / {formatFileSize(file.size)}
-                  </span>
-                  <div className="flex items-center gap-3">
-                    {file.instantSpeed !== undefined && file.instantSpeed > 0 && (
-                      <span className="text-sm font-mono font-medium text-orange-400">
-                        {formatSpeed(file.instantSpeed)}
-                      </span>
-                    )}
-                    {eta && (
-                      <span className="text-xs text-gray-500">
-                        ETA: {formatTime(eta)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Error Message with prominent retry */}
-          {file.status === 'error' && file.error && (
-            <div className="mt-2 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <svg className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-red-400 font-medium">Upload Failed</p>
-                  <p className="text-xs text-red-300/80 mt-0.5">{file.error}</p>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-2">
-                <button
-                  onClick={() => retryUpload(file.id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Retry Upload
-                </button>
-                <button
-                  onClick={() => removeFile(file.id)}
-                  className="px-3 py-1.5 text-gray-400 hover:text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          )}
+      {/* Show all header */}
+      {showAll && (
+        <div className="px-4 py-3 border-b border-gray-700/50">
+          <span className="text-sm font-medium text-white">All Files ({files.length})</span>
         </div>
+      )}
 
-        {/* Actions - for non-error states */}
-        <div className="flex-shrink-0 flex items-center gap-1">
-          {file.status === 'uploading' && (
-            <button
-              onClick={() => pauseUpload(file.id)}
-              className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-              title="Pause"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6" />
-              </svg>
-            </button>
-          )}
+      {/* File list */}
+      {displayFiles.length > 0 && (
+        <VirtualFileList
+          files={displayFiles}
+          onRemove={removeFile}
+          onRetry={retryUpload}
+          onPause={pauseUpload}
+          onResume={resumeUpload}
+        />
+      )}
 
-          {file.status === 'paused' && (
-            <button
-              onClick={() => resumeUpload(file.id)}
-              className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-              title="Resume"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              </svg>
-            </button>
-          )}
-
-          {file.status !== 'uploading' && file.status !== 'error' && (
-            <button
-              onClick={() => removeFile(file.id)}
-              className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-colors"
-              title="Remove"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          )}
+      {/* No active files message */}
+      {!showAll && activeFiles.length === 0 && files.length > 0 && (
+        <div className="px-4 py-4 text-center text-sm text-gray-400">
+          No active uploads
         </div>
-      </div>
+      )}
+
+      {/* Toggle button */}
+      {files.length > activeFiles.length && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="w-full px-4 py-2.5 border-t border-gray-700/50 text-xs text-gray-400 hover:text-white hover:bg-gray-700/30 transition-colors"
+        >
+          {showAll ? 'Show active only' : `Show all ${files.length} files`}
+        </button>
+      )}
     </div>
   );
 }

@@ -8,23 +8,40 @@ interface Session {
   projectName: string;
   crewName: string;
   notes?: string;
+  createdAt?: string;
+}
+
+export interface BatchRecord {
+  batchNumber: number;
+  fileCount: number;
+  completedFiles: number;
+  failedFiles: number;
+  totalBytes: number;
+  startedAt: string;
+  completedAt: string;
 }
 
 interface SessionState {
   session: Session | null;
   isLoading: boolean;
   error: string | null;
+  batches: BatchRecord[];
+  currentBatchNumber: number;
   createSession: (projectName: string, crewName: string, notes?: string) => Promise<boolean>;
+  completeBatch: (stats: Omit<BatchRecord, 'batchNumber'>) => void;
+  startNewBatch: () => void;
   clearSession: () => void;
   clearError: () => void;
 }
 
 export const useSessionStore = create<SessionState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       session: null,
       isLoading: false,
       error: null,
+      batches: [],
+      currentBatchNumber: 1,
 
       createSession: async (projectName: string, crewName: string, notes?: string) => {
         set({ isLoading: true, error: null });
@@ -35,11 +52,14 @@ export const useSessionStore = create<SessionState>()(
             id: response.session.id,
             projectName: response.session.projectName,
             crewName: response.session.crewName,
+            createdAt: new Date().toISOString(),
             notes
           };
           set({
             session: sessionData,
-            isLoading: false
+            isLoading: false,
+            batches: [],
+            currentBatchNumber: 1
           });
 
           // Report session start to backend for live monitoring
@@ -64,19 +84,43 @@ export const useSessionStore = create<SessionState>()(
         }
       },
 
+      completeBatch: (stats) => {
+        const { currentBatchNumber, batches } = get();
+        const batchRecord: BatchRecord = {
+          batchNumber: currentBatchNumber,
+          ...stats
+        };
+        set({
+          batches: [...batches, batchRecord],
+          currentBatchNumber: currentBatchNumber + 1
+        });
+      },
+
+      startNewBatch: () => {
+        // currentBatchNumber is already incremented by completeBatch
+      },
+
       clearSession: () => {
         const currentSession = useSessionStore.getState().session;
         if (currentSession) {
           // Report session end to backend for live monitoring
           reportSessionEnd(currentSession.id);
         }
-        set({ session: null });
+        set({
+          session: null,
+          batches: [],
+          currentBatchNumber: 1
+        });
       },
       clearError: () => set({ error: null })
     }),
     {
       name: 'crew-upload-session',
-      partialize: (state) => ({ session: state.session })
+      partialize: (state) => ({
+        session: state.session,
+        batches: state.batches,
+        currentBatchNumber: state.currentBatchNumber
+      })
     }
   )
 );

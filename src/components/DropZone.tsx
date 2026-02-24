@@ -1,7 +1,12 @@
 import { useState, useCallback } from 'react';
 import { useUploadStore } from '../stores/uploadStore';
 
-export default function DropZone() {
+interface DropZoneProps {
+  batchNumber?: number;
+  hasCompletedBatches?: boolean;
+}
+
+export default function DropZone({ batchNumber = 1, hasCompletedBatches = false }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const { addFiles } = useUploadStore();
 
@@ -22,7 +27,6 @@ export default function DropZone() {
     e.stopPropagation();
     setIsDragOver(false);
 
-    // In Electron, e.dataTransfer.files contains File objects with .path property
     const droppedFiles = e.dataTransfer.files;
     const files: FileInfo[] = [];
 
@@ -35,8 +39,6 @@ export default function DropZone() {
         continue;
       }
 
-      // Use expandPath to handle both files and directories
-      // This returns file info for files, or recursively gets all files for directories
       try {
         const expandedFiles = await window.electronAPI.expandPath(filePath);
         files.push(...expandedFiles);
@@ -72,6 +74,18 @@ export default function DropZone() {
     }
   };
 
+  const headingText = isDragOver
+    ? 'Drop files here'
+    : hasCompletedBatches
+      ? 'Ready for more files?'
+      : 'Drag and drop files or folders';
+
+  const subText = isDragOver
+    ? ''
+    : hasCompletedBatches
+      ? `Drag and drop to start Batch ${batchNumber}`
+      : 'or use the buttons below to select them';
+
   return (
     <div
       onDragOver={handleDragOver}
@@ -101,12 +115,14 @@ export default function DropZone() {
         </svg>
 
         <h3 className="mt-4 text-lg font-medium text-white">
-          {isDragOver ? 'Drop files here' : 'Drag and drop files or folders'}
+          {headingText}
         </h3>
 
-        <p className="mt-2 text-sm text-gray-400">
-          or use the buttons below to select them
-        </p>
+        {subText && (
+          <p className="mt-2 text-sm text-gray-400">
+            {subText}
+          </p>
+        )}
 
         <div className="mt-6 flex items-center justify-center gap-4">
           <button
@@ -114,7 +130,7 @@ export default function DropZone() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Select Files
           </button>
@@ -124,7 +140,7 @@ export default function DropZone() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Select Folder
           </button>

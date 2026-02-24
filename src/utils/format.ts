@@ -46,3 +46,18 @@ export function formatDuration(ms: number): string {
   const seconds = Math.floor(ms / 1000);
   return formatTime(seconds);
 }
+
+export function formatTimeRemaining(bytes: number, bytesPerSecond: number): string {
+  if (bytesPerSecond === 0) return '--';
+  const seconds = Math.ceil(bytes / bytesPerSecond);
+  return formatTime(seconds);
+}
+
+export function formatTimeOfDay(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('en-AU', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+}
