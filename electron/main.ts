@@ -918,16 +918,18 @@ const API_BASE_URL = 'https://upload.turbo.net.au';
 ipcMain.handle('send-completion-email', async (_, params: {
   projectName: string;
   crewName: string;
+  batchNumber?: number;
   fileCount: number;
   totalSize: string;
   fileNames: string[];
 }) => {
-  const { projectName, crewName, fileCount, totalSize, fileNames } = params;
+  const { projectName, crewName, batchNumber, fileCount, totalSize, fileNames } = params;
 
   try {
     const postData = JSON.stringify({
       projectName,
       crewName,
+      batchNumber,
       fileCount,
       totalSize,
       fileNames

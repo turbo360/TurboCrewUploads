@@ -57,13 +57,14 @@ export default function UploadPage() {
       const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
       const duration = new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
-      // Send completion email (only once per batch)
+      // Send batch completion notification (only once per batch)
       if (!emailSentRef.current && session && window.electronAPI) {
         emailSentRef.current = true;
         const completedFiles = files.filter(f => f.status === 'completed');
         window.electronAPI.sendCompletionEmail({
           projectName: session.projectName,
           crewName: session.crewName,
+          batchNumber: currentBatchNumber,
           fileCount: completedFiles.length,
           totalSize: formatFileSize(totalBytes),
           fileNames: completedFiles.map(f => f.name)
