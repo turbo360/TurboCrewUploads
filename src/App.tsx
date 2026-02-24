@@ -1,8 +1,7 @@
 import { useAuthStore } from './stores/authStore';
 import { useSessionStore } from './stores/sessionStore';
 import Layout from './components/Layout';
-import LoginPage from './pages/LoginPage';
-import SessionSetupPage from './pages/SessionSetupPage';
+import StartPage from './pages/StartPage';
 import UploadPage from './pages/UploadPage';
 import UpdateNotification from './components/UpdateNotification';
 
@@ -14,10 +13,8 @@ export default function App() {
     <>
       <UpdateNotification />
       <Layout>
-        {!isAuthenticated ? (
-          <LoginPage />
-        ) : !session ? (
-          <SessionSetupPage />
+        {(!isAuthenticated || !session) ? (
+          <StartPage />
         ) : (
           <UploadPage />
         )}

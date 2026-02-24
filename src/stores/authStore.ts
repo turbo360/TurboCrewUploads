@@ -4,10 +4,12 @@ import { api } from '../utils/api';
 
 interface AuthState {
   token: string | null;
+  userName: string | null;
+  userEmail: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (password: string) => Promise<boolean>;
+  login: (name: string, email: string) => Promise<boolean>;
   logout: () => Promise<void>;
   clearError: () => void;
   handleTokenExpired: () => void;
@@ -17,20 +19,28 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       token: null,
+      userName: null,
+      userEmail: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
 
-      login: async (password: string) => {
+      login: async (name: string, email: string) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.post('/api/auth/login', { password });
+          const response = await api.post('/api/auth/login', { name, email });
           const { token } = response;
-          set({ token, isAuthenticated: true, isLoading: false });
+          set({
+            token,
+            userName: name.trim(),
+            userEmail: email.trim().toLowerCase(),
+            isAuthenticated: true,
+            isLoading: false
+          });
           return true;
         } catch (error: any) {
           set({
-            error: error.message || 'Invalid password',
+            error: error.message || 'Login failed',
             isLoading: false
           });
           return false;
@@ -46,19 +56,24 @@ export const useAuthStore = create<AuthState>()(
             // Ignore logout errors
           }
         }
-        set({ token: null, isAuthenticated: false });
+        set({ token: null, userName: null, userEmail: null, isAuthenticated: false });
       },
 
       clearError: () => set({ error: null }),
 
       handleTokenExpired: () => {
-        set({ token: null, isAuthenticated: false, error: 'Session expired. Please log in again.' });
+        set({ token: null, userName: null, userEmail: null, isAuthenticated: false, error: 'Session expired. Please log in again.' });
         localStorage.removeItem('crew-upload-session');
       }
     }),
     {
       name: 'crew-upload-auth',
-      partialize: (state) => ({ token: state.token, isAuthenticated: state.isAuthenticated })
+      partialize: (state) => ({
+        token: state.token,
+        userName: state.userName,
+        userEmail: state.userEmail,
+        isAuthenticated: state.isAuthenticated
+      })
     }
   )
 );
